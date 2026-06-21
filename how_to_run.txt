@@ -1,0 +1,15 @@
+✅ STEP 1: Activate your virtual environment
+cd C:\Users\Lenovo\OneDrive\Documents\RAG-for-Legal-Research
+.\llamaenv\Scripts\activate
+
+✅ STEP 2: Start Ollama (for embeddings + inference)
+ollama run mistral
+
+✅ STEP 3:Open another terminal 
+ollama serve
+
+✅ STEP 4: Run your FastAPI backend server
+uvicorn main:app --reload
+
+then choose open in browser in frontend.html
+

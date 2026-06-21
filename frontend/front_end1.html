@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocuVerse AI</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===================== NAVBAR ===================== -->
+  <nav class="navbar">
+
+    <div class="nav-brand">
+      <div class="logo-mark"></div>
+      <div>
+        <h1>DocuVerse AI</h1>
+        <span class="brand-tag">Document Intelligence</span>
+      </div>
+    </div>
+
+    <div class="nav-stats">
+      <div class="stat-pill">📄 <b id="pagesCount">0</b> pages</div>
+      <div class="stat-pill">🧩 <b id="chunksCount">0</b> chunks</div>
+      <div class="stat-pill">💬 <b id="questionCount">0</b> asked</div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="nav-btn" id="summaryBtn"><span class="ic">✨</span><span class="nav-label">Summary</span></button>
+      <button class="nav-btn" id="insightsBtn"><span class="ic">📊</span><span class="nav-label">Insights</span></button>
+      <button class="nav-btn" id="historyBtn"><span class="ic">🕒</span><span class="nav-label">History</span></button>
+      <button class="nav-btn" id="searchNavBtn"><span class="ic">🔍</span><span class="nav-label">Search</span></button>
+      <button class="nav-btn" id="compareNavBtn"><span class="ic">🔀</span><span class="nav-label">Compare</span></button>
+      <button class="nav-btn primary" id="exportBtn"><span class="ic">📥</span><span class="nav-label">Export</span></button>
+    </div>
+
+  </nav>
+
+  <!-- ===================== WORKSPACE ===================== -->
+  <main class="workspace">
+
+    <section class="center-col">
+
+      <div class="upload-bar">
+        <label class="file-label" for="pdfFile">
+          📎 <span id="fileNameTag">Choose a PDF…</span>
+        </label>
+        <input type="file" id="pdfFile" accept=".pdf" hidden>
+        <button id="uploadBtn" class="upload-btn">Upload Document</button>
+        <span id="statusText" class="status-text">Ready</span>
+      </div>
+
+      <div class="chat-shell">
+
+        <div id="chatMessages" class="chat-messages">
+          <div class="chat-empty" id="chatEmptyState">
+            <div class="bot-orb">🤖</div>
+            <h3>Ask anything about your document</h3>
+            <p>Upload a PDF above, then chat with the AI assistant to summarize, search, and explore it.</p>
+          </div>
+        </div>
+
+        <div id="suggestionsBox" class="chips-row"></div>
+        <div id="followupsBox" class="chips-row"></div>
+
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="Ask anything about your document...">
+          <button id="sendBtn">Send</button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ===================== RIGHT DOC PANEL ===================== -->
+    <aside class="doc-panel" id="docPanel">
+      <div class="doc-panel-inner">
+
+        <div class="doc-panel-header">
+          <h3>Your Documents</h3>
+        </div>
+
+        <div id="documentsList"></div>
+
+        <iframe id="pdfViewer" class="pdf-frame" src=""></iframe>
+
+      </div>
+    </aside>
+
+  </main>
+
+</div>
+
+<!-- ===================== MODALS ===================== -->
+
+<div class="modal-overlay" id="summaryModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>✨ Executive Summary</h2>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div id="summaryBox">Upload a document and click Summary.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="insightsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>📊 Insights</h2>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div id="insightsBox">Insights will appear here.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>🕒 Recent Questions</h2>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div id="historyBox"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="searchModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>🔍 Search Document</h2>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-row">
+        <input id="searchInput" placeholder="Search document...">
+        <button id="searchBtn">Search</button>
+      </div>
+      <div id="searchResults"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="compareModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>🔀 Compare Documents</h2>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div class="compare-row">
+        <select id="doc1Select" class="compare-select"></select>
+        <select id="doc2Select" class="compare-select"></select>
+        <button id="compareBtn" class="compare-btn">Compare</button>
+      </div>
+      <div id="comparisonResult"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="ui.js"></script>
+
+</body>
+</html>
