@@ -9,7 +9,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from services.export_service import create_report
+from backend.services.export_service import create_report
 
 from fastapi.responses import FileResponse
 
