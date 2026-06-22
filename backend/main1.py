@@ -1,5 +1,8 @@
 print("RUNNING BACKEND MAIN.PY")
 print("STEP 1")
+
+
+
 from multiprocessing import context
 import os
 import shutil
@@ -16,7 +19,9 @@ from fastapi.responses import FileResponse
 
 load_dotenv()
 
+print("GROQ KEY =", repr(os.getenv("GROQ_API_KEY")))
 
+print("KEY FOUND:", os.getenv("GROQ_API_KEY"))
 # from services.rag_services import (
 #     get_embeddings,
 #     load_vectorstore
@@ -263,7 +268,9 @@ async def upload_pdf(file: UploadFile = File(...)):
             persist_directory=db_path
         )
 
+        vectorstores[file.filename] = vectorstore
         current_document = file.filename
+
         print(
             "ALL DOCUMENTS:",
             list(vectorstores.keys())
@@ -954,6 +961,34 @@ async def search_document(
         "results":
         results
     }
+
+
+
+
+
+@app.get("/test-groq")
+def test_groq():
+
+    try:
+
+        llm = get_llm()
+
+        response = llm.invoke(
+            "Reply with only the word HELLO"
+        )
+
+        return {
+            "success": True,
+            "response": response.content
+        }
+
+    except Exception as e:
+
+        return {
+            "success": False,
+            "error": str(e)
+        }
+    
 
 # =====================================================
 # RUN SERVER
