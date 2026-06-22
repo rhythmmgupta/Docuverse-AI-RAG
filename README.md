@@ -1,104 +1,37 @@
-🚀 DocuVerse AI - Intelligent Document Analysis & RAG Assistant
-📌 Overview
+# 🚀 DocuVerse AI
 
-DocuVerse AI is an AI-powered document intelligence platform that enables users to upload PDF documents, interact with them through natural language, generate summaries, extract insights, compare documents, and export professional reports.
+> AI-Powered Document Intelligence Platform using RAG, FastAPI, Groq LLM, ChromaDB, and LangChain.
 
-The platform leverages Retrieval-Augmented Generation (RAG), Vector Search, Large Language Models (LLMs), and Semantic Retrieval to provide accurate, context-aware responses directly from uploaded documents.
+---
 
-✨ Features
-📄 PDF Upload & Processing
-Upload PDF documents securely
-Automatic text extraction and parsing
-Multi-page document support
-Built-in PDF viewer
-🤖 AI-Powered Document Chat (RAG)
+## 📖 Overview
 
-Ask questions directly about uploaded documents.
+DocuVerse AI is an intelligent document analysis platform that enables users to upload PDF documents, interact with them using natural language, generate summaries, extract insights, compare documents, and export professional reports.
 
-Example Queries
+The project leverages **Retrieval-Augmented Generation (RAG)** to provide context-aware answers grounded in uploaded documents.
 
-What is normalization in DBMS?
+---
 
-Explain DNS resolution process.
+## ✨ Features
 
-What are the advantages of indexing?
+| Feature | Description |
+|----------|------------|
+| 📄 PDF Upload | Upload and process PDF documents |
+| 👀 PDF Viewer | Built-in document preview |
+| 🤖 AI Chat | Ask questions about uploaded documents |
+| 📝 Summary Generation | Generate structured document summaries |
+| 💡 Insights Extraction | Extract key information automatically |
+| 🔍 Semantic Search | Search documents using natural language |
+| 📚 Multi-Document Support | Manage multiple uploaded PDFs |
+| ⚖️ Document Comparison | Compare two documents side-by-side |
+| 🕒 Chat History | Store previous interactions |
+| 📤 Export Reports | Generate downloadable PDF reports |
 
-Capabilities
+---
 
-Context-aware responses
-Semantic document retrieval
-Source-backed answers
-Natural language interaction
-📝 Automatic Document Summarization
+# 🏗️ System Architecture
 
-Generate structured summaries including:
-
-Executive Summary
-Key Points
-Important Concepts
-Action Items
-💡 Intelligent Insights Extraction
-
-Automatically extracts:
-
-Important Topics
-Key Concepts
-Organizations
-Dates
-Risks
-Critical Information
-🔍 Semantic Search
-
-Search documents using natural language instead of exact keywords.
-
-Example
-
-Find references related to database security.
-📚 Multi-Document Management
-Upload multiple PDFs
-Switch between documents
-Maintain separate document contexts
-Individual vector indexing
-⚖️ Document Comparison
-
-Compare two uploaded documents and identify:
-
-Similarities
-Differences
-Shared Concepts
-Missing Information
-🕒 Chat History
-Stores previous questions
-Maintains AI responses
-Supports contextual follow-up queries
-📤 Export Professional Reports
-
-Generate downloadable PDF reports containing:
-
-Document Summary
-Extracted Insights
-Question History
-AI Responses
-🛠️ Tech Stack
-Frontend
-HTML5
-CSS3
-JavaScript
-Backend
-FastAPI
-Python
-AI & RAG
-LangChain
-Groq LLM
-ChromaDB
-HuggingFace Embeddings
-Sentence Transformers
-PDF Processing
-PyPDFLoader
-Recursive Character Text Splitter
-Report Generation
-ReportLab
-🏗️ System Architecture
+```text
                 +----------------------+
                 |      User UI         |
                 | HTML/CSS/JS Frontend |
@@ -136,7 +69,7 @@ ReportLab
 
  +----------------------+
  | HuggingFace          |
- | Embedding Model      |
+ | Embeddings           |
  +----------+-----------+
             |
             v
@@ -149,7 +82,7 @@ ReportLab
             v
 
  +----------------------+
- | Semantic Retriever   |
+ | Retriever            |
  +----------+-----------+
             |
             v
@@ -163,30 +96,103 @@ ReportLab
  +----------------------+
  | AI Generated Answer  |
  +----------------------+
-🔄 RAG Workflow
-Step 1: Upload PDF
+```
+
+---
+
+# 🔄 RAG Workflow
+
+## Step 1: Upload PDF
+
+```text
 PDF → Text Extraction
-Step 2: Chunk Creation
+```
+
+## Step 2: Chunk Creation
+
+```text
 Document → Smaller Chunks
-Step 3: Embedding Generation
-Text Chunk → Vector Embedding
-Step 4: Chroma Indexing
+```
+
+## Step 3: Embedding Generation
+
+```text
+Chunks → Vector Embeddings
+```
+
+## Step 4: Vector Storage
+
+```text
 Embeddings → ChromaDB
-Step 5: User Query
-Question → Semantic Search
-Step 6: Retrieval
+```
+
+## Step 5: User Query
+
+```text
+Question → Retriever
+```
+
+## Step 6: Context Retrieval
+
+```text
 Relevant Chunks Retrieved
-Step 7: LLM Reasoning
+```
+
+## Step 7: LLM Processing
+
+```text
 Context + Question → Groq LLM
-Step 8: Response Generation
+```
+
+## Step 8: Response Generation
+
+```text
 Accurate AI Answer
-📂 Project Structure
+```
+
+---
+
+# 🛠️ Technology Stack
+
+## Frontend
+
+- HTML5
+- CSS3
+- JavaScript
+
+## Backend
+
+- FastAPI
+- Python
+
+## AI & RAG
+
+- LangChain
+- Groq LLM
+- ChromaDB
+- HuggingFace Embeddings
+- Sentence Transformers
+
+## PDF Processing
+
+- PyPDFLoader
+- Recursive Character Text Splitter
+
+## Report Generation
+
+- ReportLab
+
+---
+
+# 📂 Project Structure
+
+```text
 DocuVerse-AI
 │
 ├── backend
 │   ├── main1.py
-│   └── services
-│       └── export_service.py
+│   ├── services
+│   │   └── export_service.py
 │
 ├── frontend
 │   ├── front_end1.html
@@ -200,83 +206,174 @@ DocuVerse-AI
 ├── requirements.txt
 ├── .env
 └── README.md
-🚀 Running Locally
-1️⃣ Clone Repository
+```
+
+---
+
+# 🚀 Running Locally
+
+## 1️⃣ Clone Repository
+
+```bash
 git clone https://github.com/Rudraksh-2005/Docuverse-AI-RAG.git
 
 cd Docuverse-AI-RAG
-2️⃣ Create Virtual Environment
+```
+
+---
+
+## 2️⃣ Create Virtual Environment
+
+```bash
 python -m venv venv
-Windows
+```
+
+### Windows
+
+```bash
 venv\Scripts\activate
-Linux / Mac
+```
+
+### Linux / Mac
+
+```bash
 source venv/bin/activate
-3️⃣ Install Dependencies
+```
+
+---
+
+## 3️⃣ Install Dependencies
+
+```bash
 pip install -r requirements.txt
-4️⃣ Create Environment File
+```
 
-Create a .env file in the project root.
+---
 
+## 4️⃣ Create Environment File
+
+Create a `.env` file in the project root.
+
+```env
 GROQ_API_KEY=your_groq_api_key
+```
 
-Get your API key from:
+Get your API Key from:
 
-Groq Console
+https://console.groq.com/keys
 
-5️⃣ Run Backend
+---
+
+## 5️⃣ Run Backend
 
 From the project root:
 
+```bash
 python -m uvicorn backend.main1:app --reload
+```
 
 Backend URL:
 
+```text
 http://127.0.0.1:8000
+```
 
 Swagger Documentation:
 
+```text
 http://127.0.0.1:8000/docs
-6️⃣ Run Frontend
+```
+
+---
+
+## 6️⃣ Run Frontend
 
 Open a new terminal:
 
+```bash
 cd frontend
 
 python -m http.server 5500
+```
 
-Open:
+Open in browser:
 
+```text
 http://localhost:5500/front_end1.html
-7️⃣ Start Using DocuVerse AI
-Upload PDF
-Upload any PDF document
-Automatic indexing begins
-Generate Summary
-Click Summary
-AI creates structured overview
-Extract Insights
-Click Insights
-AI extracts key information
-Ask Questions
+```
+
+---
+
+# 🎯 How To Use
+
+## Upload PDF
+
+- Click **Upload Document**
+- Select a PDF file
+- Automatic indexing begins
+
+## Generate Summary
+
+- Click **Summary**
+- Receive a structured AI-generated summary
+
+## Extract Insights
+
+- Click **Insights**
+- View important concepts and key information
+
+## Ask Questions
+
+Example:
+
+```text
 What is normalization?
 
 Explain DNS resolution process.
 
-Summarize Chapter 3.
-Compare Documents
-Upload multiple PDFs
-Select Compare
-Analyze similarities and differences
-Export Report
-Generate professional PDF reports
-Download document analysis
-🔮 Future Enhancements
-User Authentication
-Cloud Storage Integration
-OCR for Scanned PDFs
-Citation-Based Responses
-Real-Time Collaboration
-Azure/OpenAI Embeddings
-Persistent Vector Database
-Multi-User Workspaces
-Cloud Deployment Support
+Summarize Chapter 4.
+```
+
+## Compare Documents
+
+- Upload multiple documents
+- Select Compare
+- Analyze similarities and differences
+
+## Export Report
+
+- Generate professional PDF reports
+- Download analysis results
+
+---
+
+# 🔮 Future Enhancements
+
+- User Authentication
+- Cloud Storage Integration
+- OCR Support for Scanned PDFs
+- Citation-Based Answers
+- Azure/OpenAI Embeddings
+- Multi-User Workspaces
+- Real-Time Collaboration
+- Cloud Deployment
+
+---
+
+# 👨‍💻 Author
+
+**Rudraksh Agrawal**
+
+AI • RAG Systems • FastAPI • LangChain • Full Stack Development • Vector Databases • Cloud Technologies
+
+---
+
+# ⭐ Support
+
+If you found this project useful, consider giving it a ⭐ on GitHub.
+
+---
+
+# 📜 License
+
+This project is intended for educational, research, and portfolio purposes.
