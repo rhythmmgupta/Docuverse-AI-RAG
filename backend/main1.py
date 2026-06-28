@@ -1,7 +1,3 @@
-
-
-
-
 from multiprocessing import context
 import os
 import shutil
@@ -89,7 +85,7 @@ Return only questions.
 
 from langchain_groq import ChatGroq
 
-from langchain_groq import ChatGroq
+
 
 
 # =====================================================
@@ -97,8 +93,6 @@ from langchain_groq import ChatGroq
 # =====================================================
 
 app = FastAPI(title="DocuVerse AI")
-print("STEP 3")
-print("APP STARTED")
 
 app.add_middleware(
     CORSMiddleware,
@@ -149,13 +143,19 @@ class SearchRequest(BaseModel):
 # HELPERS
 # =====================================================
 
+_embeddings = None
+
 def get_embeddings():
-    from langchain_huggingface import HuggingFaceEmbeddings
+    global _embeddings
 
-    return HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
+    if _embeddings is None:
+        from langchain_huggingface import HuggingFaceEmbeddings
 
+        _embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+    return _embeddings
 
 _llm = None
 
@@ -189,112 +189,116 @@ def home():
 # =====================================================
 # UPLOAD PDF
 # =====================================================
-
-
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
 
-    
     from langchain_community.document_loaders import PyPDFLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_community.vectorstores import Chroma
 
     try:
 
-        global vectorstore
         global current_document
         global chat_history
 
         UPLOAD_DIR = "uploads"
+        DB_DIR = "db"
 
-        os.makedirs(
-            UPLOAD_DIR,
-            exist_ok=True
-        )
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        os.makedirs(DB_DIR, exist_ok=True)
 
-        pdf_path = os.path.join(
-            UPLOAD_DIR,
-            file.filename
-        )
+        # -----------------------------
+        # Validate PDF Size
+        # -----------------------------
+        MAX_SIZE = 10 * 1024 * 1024  # 10 MB
 
-        # overwrite existing file safely
-        with open(
-            pdf_path,
-            "wb"
-        ) as buffer:
+        contents = await file.read()
 
-            shutil.copyfileobj(
-                file.file,
-                buffer
-            )
+        if len(contents) > MAX_SIZE:
+            return {
+                "status": "error",
+                "message": "PDF size exceeds 10 MB."
+            }
 
-        loader = PyPDFLoader(
-            pdf_path
-        )
+        pdf_path = os.path.join(UPLOAD_DIR, file.filename)
 
+        with open(pdf_path, "wb") as buffer:
+            buffer.write(contents)
+
+        # -----------------------------
+        # Load PDF
+        # -----------------------------
+        loader = PyPDFLoader(pdf_path)
         docs = loader.load()
 
+        pages = len(docs)
+
+        # -----------------------------
+        # Split PDF
+        # -----------------------------
         splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200
+            chunk_size=500,
+            chunk_overlap=50
         )
 
-        chunks = splitter.split_documents(
-            docs
-        )
+        chunks = splitter.split_documents(docs)
+        chunk_count = len(chunks)
 
+        # -----------------------------
+        # Create Vector Database
+        # -----------------------------
         embeddings = get_embeddings()
 
-        # Separate DB for each PDF
         db_path = os.path.join(
-            "db",
-            file.filename.replace(
-                ".pdf",
-                ""
-            )
+            DB_DIR,
+            file.filename.replace(".pdf", "")
         )
 
-        os.makedirs(
-            "db",
-            exist_ok=True
-        )
-
-        vectorstore = Chroma.from_documents(
+        Chroma.from_documents(
             documents=chunks,
             embedding=embeddings,
             persist_directory=db_path
         )
 
-        vectorstores[file.filename] = vectorstore
-        current_document = file.filename
-
-        print(
-            "ALL DOCUMENTS:",
-            list(vectorstores.keys())
-        )
+        # Store ONLY the database path
+        vectorstores[file.filename] = db_path
 
         current_document = file.filename
 
         if current_document not in chat_history:
-
             chat_history[current_document] = []
+
+        # -----------------------------
+        # Free Memory
+        # -----------------------------
+        del docs
+        del chunks
+        del loader
+        del splitter
+        del embeddings
+        del contents
+
+        import gc
+        gc.collect()
+
+        print("Indexed Documents:", list(vectorstores.keys()))
 
         return {
             "status": "success",
             "document": file.filename,
-            "pages": len(docs),
-            "chunks": len(chunks)
+            "pages": pages,
+            "chunks": chunk_count
         }
 
     except Exception as e:
+
+        import traceback
+        traceback.print_exc()
 
         return {
             "status": "error",
             "message": str(e)
         }
-
-
-
 
 # =====================================================
 # SUMMARY
@@ -303,6 +307,8 @@ async def upload_pdf(file: UploadFile = File(...)):
 @app.post("/summary")
 async def generate_summary():
 
+    from langchain_community.vectorstores import Chroma
+
     try:
 
         global current_document
@@ -310,25 +316,25 @@ async def generate_summary():
         global latest_summary
 
         if current_document is None:
-
             return {
-                "summary":
-                "Please select a document first."
+                "summary": "Please select a document first."
             }
 
         if current_document not in vectorstores:
-
             return {
-                "summary":
-                "Document not indexed."
+                "summary": "Document not indexed."
             }
 
-        vectorstore = vectorstores[
-            current_document
-        ]
+        # Load Chroma from disk
+        db_path = vectorstores[current_document]
+
+        vectorstore = Chroma(
+            persist_directory=db_path,
+            embedding_function=get_embeddings()
+        )
 
         retriever = vectorstore.as_retriever(
-            search_kwargs={"k": 15}
+            search_kwargs={"k": 5}
         )
 
         docs = retriever.invoke(
@@ -336,7 +342,7 @@ async def generate_summary():
         )
 
         context = "\n\n".join(
-            [doc.page_content for doc in docs]
+            doc.page_content for doc in docs
         )
 
         prompt = f"""
@@ -361,25 +367,27 @@ Context:
 Summary:
 """
 
-        response = get_llm().invoke(
-            prompt
-        )
+        response = get_llm().invoke(prompt)
 
         latest_summary = response.content
 
-        print("\nCURRENT DOC:")
-        print(current_document)
+        # Free memory
+        del docs
+        del context
+        del retriever
+        del vectorstore
+
+        import gc
+        gc.collect()
 
         return {
-            "summary":
-            response.content
+            "summary": response.content
         }
 
     except Exception as e:
 
         return {
-            "summary":
-            str(e)
+            "summary": str(e)
         }
 
 # =====================================================
@@ -389,18 +397,35 @@ Summary:
 @app.post("/suggestions")
 async def suggested_questions():
 
+    from langchain_community.vectorstores import Chroma
+
     try:
 
-        global vectorstore
+        global current_document
+        global vectorstores
 
-        if vectorstore is None:
+        if current_document is None:
 
             return {
                 "questions": []
             }
 
+        if current_document not in vectorstores:
+
+            return {
+                "questions": []
+            }
+
+        # Load vectorstore from disk
+        db_path = vectorstores[current_document]
+
+        vectorstore = Chroma(
+            persist_directory=db_path,
+            embedding_function=get_embeddings()
+        )
+
         retriever = vectorstore.as_retriever(
-            search_kwargs={"k": 10}
+            search_kwargs={"k": 5}
         )
 
         docs = retriever.invoke(
@@ -408,7 +433,7 @@ async def suggested_questions():
         )
 
         context = "\n\n".join(
-            [doc.page_content for doc in docs]
+            doc.page_content for doc in docs
         )
 
         prompt = f"""
@@ -436,6 +461,15 @@ Document:
                 line = line.lstrip("-•123456789. ")
                 questions.append(line)
 
+        # Free memory
+        del docs
+        del context
+        del retriever
+        del vectorstore
+
+        import gc
+        gc.collect()
+
         return {
             "questions": questions[:5]
         }
@@ -451,58 +485,48 @@ Document:
 # =====================================================
 # Query PDF
 # =====================================================
-
 @app.post("/query")
 async def query_pdf(request: QueryRequest):
+
+    from langchain_community.vectorstores import Chroma
 
     global current_document
     global vectorstores
     global chat_history
 
-    if current_document is None:
+    try:
 
-        return {
-            "response": "Please select a document first."
-        }
+        if current_document is None:
+            return {
+                "response": "Please select a document first."
+            }
 
-    if current_document not in vectorstores:
+        if current_document not in vectorstores:
+            return {
+                "response": "Document not indexed."
+            }
 
-        return {
-            "response": "Document not indexed."
-        }
+        # -----------------------------
+        # Load Chroma from disk
+        # -----------------------------
+        db_path = vectorstores[current_document]
 
-    vectorstore = vectorstores[current_document]
-
-    retriever = vectorstore.as_retriever(
-        search_kwargs={"k": 8}
-    )
-
-    docs = retriever.invoke(
-        request.query
-    )
-
-    # DEBUG
-    print("\nQUESTION:")
-    print(request.query)
-
-    print("\nTOP CHUNKS:")
-
-    for i, doc in enumerate(docs[:3]):
-
-        print(f"\nChunk {i+1}")
-
-        print(
-            doc.page_content[:500]
+        vectorstore = Chroma(
+            persist_directory=db_path,
+            embedding_function=get_embeddings()
         )
 
-    context = "\n\n".join(
-        [
-            doc.page_content
-            for doc in docs
-        ]
-    )
+        retriever = vectorstore.as_retriever(
+            search_kwargs={"k": 4}
+        )
 
-    prompt = f"""
+        docs = retriever.invoke(request.query)
+
+        context = "\n\n".join(
+            doc.page_content for doc in docs
+        )
+
+        prompt = f"""
 You are DocuVerse AI.
 
 Use ONLY the provided context.
@@ -523,59 +547,67 @@ Question:
 Answer:
 """
 
-    response = get_llm().invoke(
-        prompt
-    )
+        response = get_llm().invoke(prompt)
 
-    answer = response.content
+        answer = response.content
 
-    if current_document not in chat_history:
+        if current_document not in chat_history:
+            chat_history[current_document] = []
 
-        chat_history[current_document] = []
-
-    chat_history[current_document].append(
-        {
-            "question": request.query,
-            "answer": answer
-        }
-    )
-
-    sources = []
-
-    seen_pages = set()
-
-    for doc in docs:
-
-        page = (
-            doc.metadata.get(
-                "page",
-                0
-            ) + 1
+        chat_history[current_document].append(
+            {
+                "question": request.query,
+                "answer": answer
+            }
         )
 
-        if page not in seen_pages:
+        sources = []
+        seen_pages = set()
 
-            seen_pages.add(page)
+        for doc in docs:
 
-            sources.append(
-                {
-                    "page": page,
-                    "preview":
-                    doc.page_content[:150]
-                }
-            )
+            page = doc.metadata.get("page", 0) + 1
 
-    return {
-        "response": answer,
-        "sources": sources
-    }
+            if page not in seen_pages:
 
+                seen_pages.add(page)
 
+                sources.append(
+                    {
+                        "page": page,
+                        "preview": doc.page_content[:150]
+                    }
+                )
+
+        # -----------------------------
+        # Free Memory
+        # -----------------------------
+        del docs
+        del context
+        del retriever
+        del vectorstore
+
+        import gc
+        gc.collect()
+
+        return {
+            "response": answer,
+            "sources": sources
+        }
+
+    except Exception as e:
+
+        return {
+            "response": str(e)
+        }
+    
 # =====================================================
 # DOCUMENTS INSIGHTS
 # =====================================================
 @app.post("/insights")
 async def insights():
+
+    from langchain_community.vectorstores import Chroma
 
     try:
 
@@ -597,12 +629,18 @@ async def insights():
                 "Document not indexed."
             }
 
-        vectorstore = vectorstores[
-            current_document
-        ]
+        # -----------------------------
+        # Load Chroma from disk
+        # -----------------------------
+        db_path = vectorstores[current_document]
+
+        vectorstore = Chroma(
+            persist_directory=db_path,
+            embedding_function=get_embeddings()
+        )
 
         retriever = vectorstore.as_retriever(
-            search_kwargs={"k": 10}
+            search_kwargs={"k": 5}
         )
 
         docs = retriever.invoke(
@@ -610,10 +648,8 @@ async def insights():
         )
 
         context = "\n\n".join(
-            [
-                doc.page_content
-                for doc in docs
-            ]
+            doc.page_content
+            for doc in docs
         )
 
         prompt = build_insights_prompt(
@@ -623,7 +659,19 @@ async def insights():
         response = get_llm().invoke(
             prompt
         )
+
         latest_insights = response.content
+
+        # -----------------------------
+        # Free Memory
+        # -----------------------------
+        del docs
+        del context
+        del retriever
+        del vectorstore
+
+        import gc
+        gc.collect()
 
         return {
             "insights":
@@ -635,10 +683,11 @@ async def insights():
         return {
             "insights": str(e)
         }
-
+    
 # =====================================================
 # LIST DOCUMENTS
 # =====================================================
+
 @app.get("/documents")
 def documents():
 
@@ -814,38 +863,40 @@ async def get_pdf():
 # COMPARE DOCUMENTS
 # =====================================================
 
+from langchain_community.vectorstores import Chroma
 
 @app.post("/compare")
-async def compare_documents(
-    request: CompareRequest
-):
+async def compare_documents(request: CompareRequest):
 
     global vectorstores
 
     if request.doc1 not in vectorstores:
-
         return {
-            "comparison":
-            "Document 1 not found."
+            "comparison": "Document 1 not found."
         }
 
     if request.doc2 not in vectorstores:
-
         return {
-            "comparison":
-            "Document 2 not found."
+            "comparison": "Document 2 not found."
         }
 
-    retriever1 = vectorstores[
-        request.doc1
-    ].as_retriever(
-        search_kwargs={"k": 8}
+    # Load both vector databases
+    vectorstore1 = Chroma(
+        persist_directory=vectorstores[request.doc1],
+        embedding_function=get_embeddings()
     )
 
-    retriever2 = vectorstores[
-        request.doc2
-    ].as_retriever(
-        search_kwargs={"k": 8}
+    vectorstore2 = Chroma(
+        persist_directory=vectorstores[request.doc2],
+        embedding_function=get_embeddings()
+    )
+
+    retriever1 = vectorstore1.as_retriever(
+        search_kwargs={"k":4}
+    )
+
+    retriever2 = vectorstore2.as_retriever(
+        search_kwargs={"k":4}
     )
 
     docs1 = retriever1.invoke(
@@ -857,17 +908,13 @@ async def compare_documents(
     )
 
     context1 = "\n\n".join(
-        [
-            doc.page_content
-            for doc in docs1
-        ]
+        doc.page_content
+        for doc in docs1
     )
 
     context2 = "\n\n".join(
-        [
-            doc.page_content
-            for doc in docs2
-        ]
+        doc.page_content
+        for doc in docs2
     )
 
     prompt = f"""
@@ -898,13 +945,23 @@ Provide:
 5. Overall Similarity
 """
 
-    response = get_llm().invoke(
-        prompt
-    )
+    response = get_llm().invoke(prompt)
+
+    # Memory cleanup
+    del docs1
+    del docs2
+    del context1
+    del context2
+    del retriever1
+    del retriever2
+    del vectorstore1
+    del vectorstore2
+
+    import gc
+    gc.collect()
 
     return {
-        "comparison":
-        response.content
+        "comparison": response.content
     }
 
 
@@ -913,53 +970,54 @@ Provide:
 # =====================================================
 
 
+from langchain_community.vectorstores import Chroma
+
 @app.post("/search")
-async def search_document(
-    request: SearchRequest
-):
+async def search_document(request: SearchRequest):
 
     global current_document
     global vectorstores
 
     if current_document not in vectorstores:
-
         return {
-            "results":[]
+            "results": []
         }
 
-    vectorstore = vectorstores[current_document]
-
-    retriever = vectorstore.as_retriever(
-        search_kwargs={"k":10}
+    vectorstore = Chroma(
+        persist_directory=vectorstores[current_document],
+        embedding_function=get_embeddings()
     )
 
-    docs =retriever.invoke(
+    retriever = vectorstore.as_retriever(
+        search_kwargs={"k":5}
+    )
+
+    docs = retriever.invoke(
         request.query
     )
 
-    results=[]
+    results = []
 
     for doc in docs:
 
         results.append(
             {
-                "page":
-                doc.metadata.get(
-                    "page",
-                    0
-                ) + 1,
-
-                "snippet":
-                doc.page_content[:250]
+                "page": doc.metadata.get("page", 0) + 1,
+                "snippet": doc.page_content[:250]
             }
         )
 
+    # Memory cleanup
+    del docs
+    del retriever
+    del vectorstore
+
+    import gc
+    gc.collect()
+
     return {
-        "results":
-        results
+        "results": results
     }
-
-
 
 
 
